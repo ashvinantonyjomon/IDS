@@ -18,9 +18,17 @@ DATA_TAB_4='\t\t\t\t -'
 
 #creating csv file
 
-csv_file=open('captured_packets.csv',mode='w',newline='')
-csv_writer=csv.writer(csv_file)
-csv_writer.writerow(['src_mac','dest_mac','eth_proto','src_ip','dst_ip','protocol','src_port','dst_port','packet'])
+def init_csv():
+    fname="cap_packs.csv"
+    writ=csv.writer(open(fname,'w',buffering=1),delimiter=',')
+    header=["src_mac","dest_mac","eth_proto","src_ip","dst_ip","protocol","src_port","dst_port","packet"]
+    writ.writerow(header)
+init_csv()
+
+def update_csv(row):
+    fname="cap_packs.csv"
+    writ=csv.writer(open(fname,'a',buffering=1),delimiter=',')
+    writ.writerow(row)
 
 
 
@@ -36,7 +44,9 @@ def main():
         print(TAB_1 + 'Destiantion: {} , Source: {} , Protocol: {}'.format(dest_mac,src_mac,eth_proto))
 
 
-        src_ip,dst_ip,src_port,dst_port,protocol=None,None,None,None,None 
+        src_ip,dst_ip,src_port,dst_port,proto=None,None,None,None,None 
+        row=[src_mac,dest_mac,eth_proto,"" ,"", "", "", "",""]
+        update_csv(row)
 
 
 
@@ -47,6 +57,9 @@ def main():
             print(TAB_1+'IPv4 Packet:')
             print(TAB_2+ 'Version: {} ,Header Length: {}, TTL: {}'.format(version,header_length,ttl))
             print(TAB_2 + 'Protocol: {}, Source: {} , Target: {}'.format(proto,src,target))
+            row=[" "," ",proto,src,target,proto," "," ", " " ]
+            update_csv(row)
+
 
 
             protocol = proto
@@ -58,6 +71,8 @@ def main():
                 print(TAB_2 + 'Type: {}, Code: {}, Checksum: {}'.format(icmp_type,code,checksum))
                 print(TAB_2 + 'DATA: ')
                 print(format_multi_line(DATA_TAB_3,data))
+                row=["","",proto,"","",proto,"","",data]
+                update_csv(row)
 
                 #TCP
             elif proto==6:
@@ -69,12 +84,16 @@ def main():
                 print(TAB_3+'URG:{},ACK:{},PSH:{},RST:{},SYN:{},FIN:{}'.format(flag_urg,flag_ack,flag_psh,flag_rst,flag_syn,flag_fin))
                 print(TAB_2+'DATA:')
                 print(format_multi_line(DATA_TAB_3,data))
+                row=["","",proto,src_prot,dest_prot,proto,"","",data]
+                update_csv(row)
 
                 #UDP
             elif proto==17:
                 src_port,dest_port,length,data=udp_segment(data)
                 print(TAB_1+'udp_SEGMENT')
                 print(TAB_2+'Source port:{},Destination Port:{},Length:{}'.format(src_port,dest_port,length))
+                row=["","",proto,"","",proto,src_port,dest_port,data]
+                update_csv(row)
             
             else:
                 print(TAB_1+'DATA: ')
@@ -85,16 +104,11 @@ def main():
             print(format_multi_line(DATA_TAB_1,data))
 
 
-        print(f"src_ip:{src_ip},dst_ip:{dst_ip},src_port:{src_port},dst_port:{dst_port},protocol:{protocol}")
+        #print(f"src_ip:{src_ip},dst_ip:{dst_ip},src_port:{src_port},dst_port:{dst_port},protocol:{protocol}")
 
-        if src_ip and dst_ip:
-            csv_writer.writerow([src_mac,dest_mac,eth_proto,src_ip,dst_ip,protocol,src_port,dest_port,len(raw_data)])
-        else:
-            print("Packet Data is incomplete not writing to csv.")
+        
 
-
-    csv_file.close()
-
+    
 #unpack the ethernet frame
 def ethernet_frame(data):
     dest_mac,src_mac,proto = struct.unpack('! 6s 6s H', data[:14])#how bytes are represented
